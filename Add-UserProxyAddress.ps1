@@ -52,7 +52,7 @@ Process {
         Try {
             $user = Get-ADUser -Identity $u.user -ErrorAction Stop
             Write-Host "$($user.SamAccountName) exists, Processing it..." -BackgroundColor DarkGray -NoNewline 
-            $emailid = "{0}:{1}" -f $u.emailid, $Protocol
+            $emailid = "{1}:{0}" -f $u.emailid, $Protocol
             Set-ADUser -Identity $u.user -Add @{Proxyaddresses=$emailid} 
             Write-Host "...ProxyAddress added" -BackgroundColor DarkGreen
         } #Try
