@@ -1,32 +1,32 @@
 <#  
   .Synopsis  
-   Add smtp id to existing active directory user proxyaddress.
+   Add smtp id to existing active directory Group proxyaddress.
   .Description  
-   Run this script on domain controller. It will add addition record to proxy addresses in user properties, and keep the existing as it is.
+   Run this script on domain controller. It will add addition record to proxy addresses in Group properties, and keep the existing as it is.
   .Example  
-   Add-UserProxyAddress -CSVFile c:\tenp\users.csv
+   Add-GroupProxyAddress -CSVFile c:\tenp\Group.csv
      
    It takes input from CSV file and add the smtp records in respective user proxy address attributes.
   .Example
    CSV file data format and example
    ----------------------------------------------
-   | user      | emailid                        |
+   | Group      | emailid                        |
    | --------------------------------------------
-   | ku0f1999  | kunal@vcloud-lab.com           |
-   | md0f2011  | mahesh@vcloud-lab.com          |
+   | Group1    | Group1@vcloud-lab.com           |
+   | Group2    | Group2@vcloud-lab.com           |
    ----------------------------------------------
   .OutPuts  
-   username ProxyAddresses
+   GroupName ProxyAddresses
    -------- --------------
-   {}       {sip:ku0f1999@vcloud-lab.com, SMTP:ku0e1123@testaccount.com, smtp:Kunal@vcloud-lab.com, }
-   {}       {sip:md0f2011@vcloud-lab.com, SMTP:md0f2011@testaccount.com, smtp:mahesh@vcloud-lab.com}
+   Group1   {sip:Group1@testaccount.com, smtp:Group1@vcloud-lab.com}
+   Group2   {sip:Group2@testaccount.com, smtp:Group2@vcloud-lab.com}
    
   .Notes  
-   NAME: Add-UserProxyAddress
+   NAME: Add-GroupProxyAddress
    AUTHOR: Kunal Udapi
    CREATIONDATE: 01 DECEMBER 2016
    LASTEDIT: 3 February 2017  
-   KEYWORDS: Add or update proxyaddress smtp on active directory user account  
+   KEYWORDS: Add or update proxyaddress smtp on active directory Group account  
   .Link  
    #Check Online version: http://kunaludapi.blogspot.com
    #Check Online version: http://vcloud-lab.com
@@ -53,8 +53,8 @@ Process {
             Write-Host "$($Group.SamAccountName) exists, Processing it..." -BackgroundColor DarkGray -NoNewline 
             $emailid = "SMTP:{0}" -f $u.emailid
             Set-ADGroup -Identity $u.Group -Add @{Proxyaddresses=$emailid} 
-            $cpemailid = "smtp:{0}" -f $u.cpemailid
-            Set-ADGroup -Identity $u.Group -Add @{Proxyaddresses=$cpemailid} 
+            #$cpemailid = "smtp:{0}" -f $u.cpemailid
+            #Set-ADGroup -Identity $u.Group -Add @{Proxyaddresses=$cpemailid} 
             Write-Host "...ProxyAddress added" -BackgroundColor DarkGreen
         } #Try
         catch {
@@ -62,15 +62,17 @@ Process {
         } #catch
     } #foreach ($u in $Groups) 
     #Get-ADUser -Filter * -SearchBase "OU=TestOu,DC=Rageframeworks,DC=com" -Properties ProxyAddresses | select username, ProxyAddresses
+    $TempFile = [System.IO.Path]::GetTempFileName()
     $Groups | foreach {
-        $Group = $_.user
+        $Group = $_.Group
         Try {
-            get-adgroup -filter * -Properties mail, proxyAddresses -ErrorAction Stop | select Name, Mail, GroupCategory, @{N='ProxyAddresses'; E={$($_.proxyAddresses -split ", ") -join "`n"}}
+            Get-ADGroup -filter {Name -eq $Group} -Properties mail, proxyAddresses -ErrorAction Stop | select Name, Mail, GroupCategory, @{N='ProxyAddresses'; E={$($_.proxyAddresses -split ", ") -join "`n"}}
         } #try
         catch {
             Write-Host "$Group does not exists" -BackgroundColor DarkRed
         }
-    } | Out-File c:\temp\userproxylist.txt #foreach
+    } | Out-File $TempFile #foreach
 } #Process
 end {
+    Get-Content -Path $TempFile
 }
